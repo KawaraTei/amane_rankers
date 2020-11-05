@@ -97,7 +97,7 @@ class _TopPageState extends State<TopPage> {
                         child: (new TextField(
                           decoration: InputDecoration(
                               border: OutlineInputBorder(),
-                              hintText: 'まだ"game_win_ratio"しかないです'),
+                              hintText: '入力せずGO'),
                           enabled: true,
                           maxLengthEnforced: false,
                           style: TextStyle(color: lavenderBrush),
@@ -296,7 +296,7 @@ class _RankingPageState extends State<RankingPage> {
 
   Widget build(BuildContext build) {
     return Scaffold(
-        appBar: AppBar(title: const Text('ランキング')),
+        appBar: AppBar(title: Text("マッチ勝率ランキング")),
         body: IndexedStack(
           index: _index,
           children: [
@@ -309,40 +309,70 @@ class _RankingPageState extends State<RankingPage> {
               ),
             ),
             Container(
-                padding: const EdgeInsets.all(50.0),
-                alignment: Alignment.topCenter,
-                child: Container(
-                  constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
-                  child: ListView.builder(
-                    itemCount: _data.length,
-                    itemBuilder: (context, int index) {
-                      return Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              constraints: BoxConstraints(
-                                  minWidth: 100, maxWidth: 300),
-                              child: Text(
-                                  (index + 1).toString(),
-                                textAlign: TextAlign.start,
-                              ),
+              alignment: Alignment.topCenter,
+              child: Container(
+                constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
+                child: ListView.builder(
+                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      itemCount: _data.length,
+                      itemBuilder: (context, int index) {
+                        return Card(
+                          elevation: 2,
+                          shape: BeveledRectangleBorder(
+                              borderRadius: BorderRadius.circular(4.0)
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Column(
+                              children:[
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Container(
+                                      constraints: BoxConstraints(
+                                          minWidth: 100, maxWidth: 300),
+                                      child: Text(
+                                        (index + 1).toString(),
+                                        textAlign: TextAlign.start,
+                                      ),
+                                    ),
+                                    Container(
+                                      constraints: BoxConstraints(
+                                          minWidth: 100, maxWidth: 300),
+                                      child: Text(
+                                        _data[index].name,
+                                        textAlign: TextAlign.end,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Padding(padding: EdgeInsets.all(2.0)),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      _data[index].entriesText(),
+                                      textAlign: TextAlign.end,
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      _data[index].matchesText(),
+                                      textAlign: TextAlign.end,
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                            Container(
-                              constraints: BoxConstraints(
-                                  minWidth: 100, maxWidth: 300),
-                              child: Text(
-                                _data[index].name,
-                                textAlign: TextAlign.end,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                )
+
+                          ),
+                        );
+                      },
+                    ),
+              )
             ),
           ],
         )
@@ -420,6 +450,14 @@ class RankingPlayerData {
   int competitionVictories;
   double victoryRatio;
   double gameWinRatio;
+
+  String entriesText() {
+    return "$competitionEntries大会中優勝$competitionVictories回　平均順位$averagePlace位";
+  }
+
+  String matchesText() {
+    return "マッチ通算 $gameWins勝 $gameLoses敗";
+  }
 
   factory RankingPlayerData.fromJson(Map<String, dynamic> json) => RankingPlayerData(
     name: json["name"],
