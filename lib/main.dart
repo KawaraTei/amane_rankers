@@ -122,77 +122,60 @@ class PlayerStatisticsPage extends StatefulWidget {
 
 class _PlayerStatisticsPageState extends State<PlayerStatisticsPage> {
   List<StatisticsRowData> _data;
+  // データなし:0 データあり:1
+  var _index = 0;
 
   Widget build(BuildContext build) {
     return Scaffold(
       appBar: AppBar(title: const Text('個人戦績')),
-      body: ListView.builder(
-        itemCount: _data.length,
-        itemBuilder: (context, int index) {
-          return Padding(
-            padding: EdgeInsets.all(8.0),
+      body: IndexedStack(
+        index: _index,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(50.0),
+            alignment: Alignment.topCenter,
             child: Container(
-                constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      constraints: BoxConstraints(minWidth: 100, maxWidth: 300),
-                      child: Text(
-                        _data[index].title,
-                        textAlign: TextAlign.start,
-                      ),
-                    ),
-                    Container(
-                      constraints: BoxConstraints(minWidth: 100, maxWidth: 300),
-                      child: Text(
-                        _data[index].value,
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
-                ],
-              ),
+              constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
+              child: Text('データが見つかりませんでした'),
             ),
-          );
-        },
-      ),
+          ),
+          Container(
+              padding: const EdgeInsets.all(50.0),
+              alignment: Alignment.topCenter,
+              child: Container(
+                constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
+                child: ListView.builder(
+                  itemCount: _data.length,
+                  itemBuilder: (context, int index) {
+                    return Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            constraints: BoxConstraints(minWidth: 100, maxWidth: 300),
+                            child: Text(
+                              _data[index].title,
+                              textAlign: TextAlign.start,
+                            ),
+                          ),
+                          Container(
+                            constraints: BoxConstraints(minWidth: 100, maxWidth: 300),
+                            child: Text(
+                              _data[index].value,
+                              textAlign: TextAlign.end,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              )
+          ),
+        ],
+      )
     );
-    // return Scaffold(
-    //   appBar: AppBar(title: const Text('個人戦績')),
-    //   body: SingleChildScrollView(
-    //     child: Container(
-    //       padding: const EdgeInsets.all(50.0),
-    //       child: Container(
-    //         child: Container(
-    //           alignment: Alignment.topCenter,
-    //           child: Container(
-    //             constraints: BoxConstraints(minWidth: 200, maxWidth: 500),
-    //             child: ListView.builder(
-    //               itemCount: _data.length,
-    //               itemBuilder: (context, int index) {
-    //                 return Padding(
-    //                     padding: EdgeInsets.all(8.0),
-    //                     child: Row(
-    //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    //                       children: [
-    //                         Text(
-    //                           _data[index].title,
-    //                           textAlign: TextAlign.start,
-    //                         ),
-    //                         Text(
-    //                           _data[index].value,
-    //                           textAlign: TextAlign.end,
-    //                         ),
-    //                       ],
-    //                     ));
-    //               },
-    //             ),
-    //           ),
-    //         ),
-    //       ),
-    //     ),
-    //   ),
-    // );
   }
 
   void fetchResults() async {
@@ -206,8 +189,15 @@ class _PlayerStatisticsPageState extends State<PlayerStatisticsPage> {
         print(jsonResponse);
         if (jsonResponse.containsKey('message')) {
           _data = [];
+          _index = 0;
         } else {
           _data = PlayerStatistics.fromJson(jsonResponse).toList();
+          if (_data.length > 0) {
+            _index = 1;
+          }
+          else {
+            _index = 0;
+          }
         }
       });
     });
@@ -254,9 +244,9 @@ class PlayerStatistics {
 
   List<StatisticsRowData> toList() => [
         StatisticsRowData("プレイヤー名", this.name),
-        StatisticsRowData("ゲーム勝利数", this.gameWins.toString()),
-        StatisticsRowData("ゲーム敗北数", this.gameLoses.toString()),
-        StatisticsRowData("ゲーム引分数", this.gameDraws.toString()),
+        StatisticsRowData("マッチ勝利数", this.gameWins.toString()),
+        StatisticsRowData("マッチ敗北数", this.gameLoses.toString()),
+        StatisticsRowData("マッチ引分数", this.gameDraws.toString()),
         StatisticsRowData("大会参加数", this.competitionEntries.toString()),
         StatisticsRowData("大会優勝数", this.competitionVictories.toString()),
         StatisticsRowData("大会平均順位", this.averagePlace.toString()),
