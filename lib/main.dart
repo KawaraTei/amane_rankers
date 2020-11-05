@@ -30,10 +30,17 @@ class TopPage extends StatefulWidget {
 
 class _TopPageState extends State<TopPage> {
   String _playerName = '';
+  String _rankingType = '';
 
-  void _handleText(String e) {
+  void _handlePlayerName(String e) {
     setState(() {
       _playerName = e;
+    });
+  }
+
+  void _handleRankingType(String e) {
+    setState(() {
+      _rankingType = e;
     });
   }
 
@@ -66,7 +73,7 @@ class _TopPageState extends State<TopPage> {
                             style: TextStyle(color: lavenderBrush),
                             obscureText: false,
                             maxLines: 1,
-                            onChanged: _handleText,
+                            onChanged: _handlePlayerName,
                           ))),
                       RaisedButton(
                         child: const Text('GO→'),
@@ -83,21 +90,33 @@ class _TopPageState extends State<TopPage> {
                         padding: const EdgeInsets.symmetric(vertical: 32),
                       ),
                       Text(
-                        'ランキング(coming soon...)',
+                        'ランキング',
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         child: (new TextField(
                           decoration: InputDecoration(
                               border: OutlineInputBorder(),
-                              hintText: 'comming soon...'),
+                              hintText: 'まだ"game_win_ratio"しかないです'),
                           enabled: true,
                           maxLengthEnforced: false,
                           style: TextStyle(color: lavenderBrush),
                           obscureText: false,
                           maxLines: 1,
-                          onChanged: _handleText,
+                          onChanged: _handleRankingType,
                         )),
+                      ),
+                      RaisedButton(
+                        child: const Text('GO→'),
+                        onPressed: () {
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (context) {
+                                return RankingPage(
+                                    rankingType: 'game_win_ratio');
+                                    // rankingType: _rankingType);
+                              }));
+                          print(_rankingType);
+                        },
                       ),
                     ],
                   ),
@@ -258,4 +277,159 @@ class StatisticsRowData {
   final String value;
 
   StatisticsRowData(this.title, this.value);
+}
+
+class RankingPage extends StatefulWidget {
+  final String rankingType;
+
+  RankingPage({this.rankingType});
+
+  @override
+  _RankingPageState createState() => _RankingPageState();
+}
+
+class _RankingPageState extends State<RankingPage> {
+  List<RankingPlayerData> _data;
+
+  // データなし:0 データあり:1
+  var _index = 0;
+
+  Widget build(BuildContext build) {
+    return Scaffold(
+        appBar: AppBar(title: const Text('ランキング')),
+        body: IndexedStack(
+          index: _index,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(50.0),
+              alignment: Alignment.topCenter,
+              child: Container(
+                constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
+                child: Text('データが見つかりませんでした'),
+              ),
+            ),
+            Container(
+                padding: const EdgeInsets.all(50.0),
+                alignment: Alignment.topCenter,
+                child: Container(
+                  constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
+                  child: ListView.builder(
+                    itemCount: _data.length,
+                    itemBuilder: (context, int index) {
+                      return Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              constraints: BoxConstraints(
+                                  minWidth: 100, maxWidth: 300),
+                              child: Text(
+                                  (index + 1).toString(),
+                                textAlign: TextAlign.start,
+                              ),
+                            ),
+                            Container(
+                              constraints: BoxConstraints(
+                                  minWidth: 100, maxWidth: 300),
+                              child: Text(
+                                _data[index].name,
+                                textAlign: TextAlign.end,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                )
+            ),
+          ],
+        )
+    );
+  }
+
+  void fetchResults() async {
+    final rankingType = widget.rankingType;
+    final url = "https://cksa7u26z0.execute-api.ap-northeast-1.amazonaws.com/api/rankings?key=$rankingType&platform=huruyoni";
+
+    http.get(url).then((response) {
+      setState(() {
+        var jsonResponse = json.decode(response.body);
+        print(jsonResponse);
+        if (jsonResponse.containsKey('message')) {
+          _data = [];
+          _index = 0;
+        } else {
+          _data = RankingData.fromJson(jsonResponse).ranking;
+          if (_data.length > 0) {
+            _index = 1;
+          }
+          else {
+            _index = 0;
+          }
+        }
+      });
+    });
+  }
+
+  @override
+  void initState() {
+    _data = [];
+    fetchResults();
+
+    super.initState();
+  }
+}
+
+class RankingData {
+  RankingData({
+    this.key,
+    this.ranking,
+  });
+
+  String key;
+  List<RankingPlayerData> ranking;
+
+  factory RankingData.fromJson(Map<String, dynamic> json) => RankingData(
+    key: json["key"],
+    ranking: List<RankingPlayerData>.from(json["ranking"].map((x) => RankingPlayerData.fromJson(x))),
+  );
+
+}
+
+class RankingPlayerData {
+  RankingPlayerData({
+    this.name,
+    this.gameWins,
+    this.gameLoses,
+    this.gameDraws,
+    this.averagePlace,
+    this.competitionEntries,
+    this.competitionVictories,
+    this.victoryRatio,
+    this.gameWinRatio,
+  });
+
+  String name;
+  int gameWins;
+  int gameLoses;
+  int gameDraws;
+  double averagePlace;
+  int competitionEntries;
+  int competitionVictories;
+  double victoryRatio;
+  double gameWinRatio;
+
+  factory RankingPlayerData.fromJson(Map<String, dynamic> json) => RankingPlayerData(
+    name: json["name"],
+    gameWins: json["game_wins"],
+    gameLoses: json["game_loses"],
+    gameDraws: json["game_draws"],
+    averagePlace: json["average_place"],
+    competitionEntries: json["competition_entries"],
+    competitionVictories: json["competition_victories"],
+    victoryRatio: json["victory_ratio"],
+    gameWinRatio: json["game_win_ratio"].toDouble(),
+  );
 }
