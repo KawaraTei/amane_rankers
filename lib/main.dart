@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:amane_rankers/definitions.dart';
 import 'package:http/http.dart' as http;
@@ -15,10 +16,17 @@ class MyApp extends StatelessWidget {
         title: 'Amane Rankers',
         theme: new ThemeData.dark().copyWith(
             primaryColor: Colors.pink,
-            accentColor: Colors.indigo,
+            accentColor: Colors.pinkAccent,
             buttonColor: lavenderBrush,
-            floatingActionButtonTheme:
-                new FloatingActionButtonThemeData(backgroundColor: lightPink)),
+            buttonTheme: ButtonThemeData(
+                buttonColor: Colors.pink,
+                shape: BeveledRectangleBorder(borderRadius: BorderRadius.circular(4.0)),
+            ),
+            toggleButtonsTheme: new ToggleButtonsThemeData(
+              fillColor: darkPink,
+              selectedColor: lavenderBrush
+            ),
+            floatingActionButtonTheme: new FloatingActionButtonThemeData(backgroundColor: lightPink)),
         home: TopPage());
   }
 }
@@ -30,7 +38,8 @@ class TopPage extends StatefulWidget {
 
 class _TopPageState extends State<TopPage> {
   String _playerName = '';
-  String _rankingType = '';
+  String _rankingType = RankingOptions.options[0];
+  var _rankingTypeSelected = [true, false, false];
 
   void _handlePlayerName(String e) {
     setState(() {
@@ -38,9 +47,10 @@ class _TopPageState extends State<TopPage> {
     });
   }
 
-  void _handleRankingType(String e) {
+  void _handleRankingType() {
     setState(() {
-      _rankingType = e;
+      final index = _rankingTypeSelected.indexOf(true);
+      _rankingType = RankingOptions.options[index];
     });
   }
 
@@ -94,17 +104,21 @@ class _TopPageState extends State<TopPage> {
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: (new TextField(
-                          decoration: InputDecoration(
-                              border: OutlineInputBorder(),
-                              hintText: '入力せずGO'),
-                          enabled: true,
-                          maxLengthEnforced: false,
-                          style: TextStyle(color: lavenderBrush),
-                          obscureText: false,
-                          maxLines: 1,
-                          onChanged: _handleRankingType,
-                        )),
+                        child: ToggleButtons(
+                          isSelected: _rankingTypeSelected,
+                          children:
+                            RankingOptions.labels.map((e) =>
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(e),
+                                )).toList(),
+                          onPressed: (int index){
+                            for (int i = 0; i < _rankingTypeSelected.length; i++) {
+                              _rankingTypeSelected[i] = index == i;
+                            }
+                            _handleRankingType();
+                          },
+                        ),
                       ),
                       RaisedButton(
                         child: const Text('GO→'),
@@ -112,10 +126,9 @@ class _TopPageState extends State<TopPage> {
                           Navigator.push(context,
                               MaterialPageRoute(builder: (context) {
                                 return RankingPage(
-                                    rankingType: 'game_win_ratio');
+                                    rankingType: _rankingType);
                                     // rankingType: _rankingType);
                               }));
-                          print(_rankingType);
                         },
                       ),
                     ],
@@ -141,7 +154,7 @@ class PlayerStatisticsPage extends StatefulWidget {
 
 class _PlayerStatisticsPageState extends State<PlayerStatisticsPage> {
   List<StatisticsRowData> _data;
-  // データなし:0 データあり:1
+  // データなし:0 データあり:1  // 取得前:0 データあり:1 データなし:2 エラー:3
   var _index = 0;
 
   Widget build(BuildContext build) {
@@ -155,7 +168,7 @@ class _PlayerStatisticsPageState extends State<PlayerStatisticsPage> {
             alignment: Alignment.topCenter,
             child: Container(
               constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
-              child: Text('データが見つかりませんでした'),
+              child: Text('処理中です'),
             ),
           ),
           Container(
@@ -191,6 +204,22 @@ class _PlayerStatisticsPageState extends State<PlayerStatisticsPage> {
                   },
                 ),
               )
+          ),
+          Container(
+            padding: const EdgeInsets.all(50.0),
+            alignment: Alignment.topCenter,
+            child: Container(
+              constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
+              child: Text('データがありません'),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(50.0),
+            alignment: Alignment.topCenter,
+            child: Container(
+              constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
+              child: Text('通信エラーが発生しました'),
+            ),
           ),
         ],
       )
@@ -291,12 +320,12 @@ class RankingPage extends StatefulWidget {
 class _RankingPageState extends State<RankingPage> {
   List<RankingPlayerData> _data;
 
-  // データなし:0 データあり:1
+  // 取得前:0 データあり:1 データなし:2 エラー:3
   var _index = 0;
 
   Widget build(BuildContext build) {
     return Scaffold(
-        appBar: AppBar(title: Text("マッチ勝率ランキング")),
+        appBar: AppBar(title: Text(RankingOptions.getLabel(widget.rankingType))),
         body: IndexedStack(
           index: _index,
           children: [
@@ -305,7 +334,7 @@ class _RankingPageState extends State<RankingPage> {
               alignment: Alignment.topCenter,
               child: Container(
                 constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
-                child: Text('データが見つかりませんでした'),
+                child: Text('処理中です'),
               ),
             ),
             Container(
@@ -367,12 +396,27 @@ class _RankingPageState extends State<RankingPage> {
                                 ),
                               ],
                             ),
-
                           ),
                         );
                       },
                     ),
               )
+            ),
+            Container(
+              padding: const EdgeInsets.all(50.0),
+              alignment: Alignment.topCenter,
+              child: Container(
+                constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
+                child: Text('データがありません'),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(50.0),
+              alignment: Alignment.topCenter,
+              child: Container(
+                constraints: BoxConstraints(minWidth: 150, maxWidth: 500),
+                child: Text('通信エラーが発生しました'),
+              ),
             ),
           ],
         )
@@ -387,16 +431,19 @@ class _RankingPageState extends State<RankingPage> {
       setState(() {
         var jsonResponse = json.decode(response.body);
         print(jsonResponse);
-        if (jsonResponse.containsKey('message')) {
+        if (response.statusCode >= 300 || jsonResponse.containsKey('message')) {
           _data = [];
-          _index = 0;
-        } else {
+          _index = 3;
+        }
+        else {
           _data = RankingData.fromJson(jsonResponse).ranking;
           if (_data.length > 0) {
+            // 正常でデータがある場合
             _index = 1;
           }
           else {
-            _index = 0;
+            // 正常で該当データなしの場合
+            _index = 2;
           }
         }
       });
@@ -452,7 +499,7 @@ class RankingPlayerData {
   double gameWinRatio;
 
   String entriesText() {
-    return "$competitionEntries大会中優勝$competitionVictories回　平均順位$averagePlace位";
+    return "$competitionEntries大会中優勝$competitionVictories回　平均順位${averagePlace.toStringAsFixed(2)} 位";
   }
 
   String matchesText() {
@@ -470,4 +517,13 @@ class RankingPlayerData {
     victoryRatio: json["victory_ratio"],
     gameWinRatio: json["game_win_ratio"].toDouble(),
   );
+}
+
+class RankingOptions {
+  static List options = ['game_win_ratio', 'victory_count', 'average_place'];
+  static List labels = ['マッチ勝率', '優勝回数', '平均順位'];
+
+  static String getLabel(option) {
+    return labels[options.indexOf(option)];
+  }
 }
